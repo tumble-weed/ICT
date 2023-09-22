@@ -6,10 +6,14 @@ from subprocess import call
 
 def run_cmd(command):
     try:
-        call(command, shell=True)
+        code = call(command, shell=True)
+        if code != 0 :
+            raise Exception
     except KeyboardInterrupt:
         print("Process interrupted")
         sys.exit(1)
+    except Exception as e:
+        raise e
 
 if __name__=='__main__':
 
@@ -28,6 +32,7 @@ if __name__=='__main__':
     ### Stage1: Reconstruction of Appearance Priors using Transformer
 
     prior_url=os.path.join(opts.save_place,"AP")
+    
     if os.path.exists(prior_url):
         print("Please change the save path")
         sys.exit(1)
@@ -41,7 +46,7 @@ if __name__=='__main__':
         test_batch_size = str(1)
 
     if opts.ImageNet:
-        stage_1_command = "CUDA_VISIBLE_DEVICES=0 python inference.py --ckpt_path ../ckpts_ICT/Transformer/ImageNet.pth \
+        stage_1_command = "CUDA_VISIBLE_DEVICES=0 python  inference.py --ckpt_path ../ckpts_ICT/Transformer/ImageNet.pth \
                                 --BERT --image_url " + opts.input_image + " \
                                 --mask_url " + opts.input_mask + " \
                                 --n_layer 35 --n_embd 1024 --n_head 8 --top_k 40 --GELU_2 \
@@ -73,7 +78,7 @@ if __name__=='__main__':
 
     os.chdir("../Guided_Upsample")
     if opts.ImageNet:
-        stage_2_command = "CUDA_VISIBLE_DEVICES=0,1 python test.py --input " + opts.input_image + " \
+        stage_2_command = "CUDA_VISIBLE_DEVICES=0,1 python -m ipdb -c c test.py --input " + opts.input_image + " \
                                         --mask " + opts.input_mask + " \
                                         --prior " + prior_url + " \
                                         --output " + opts.save_place + " \

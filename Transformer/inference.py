@@ -50,6 +50,10 @@ if __name__=='__main__':
     #                        embd_pdrop=0.0, resid_pdrop=0.0, 
     #                        attn_pdrop=0.0, n_layer=14, n_head=8,
     #                        n_embd=256,BERT=opts.BERT)
+    device = 'cpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
+
 
     model_config=GPTConfig(512,opts.image_size*opts.image_size,
                            embd_pdrop=0.0, resid_pdrop=0.0, 
@@ -71,6 +75,7 @@ if __name__=='__main__':
     C = np.load('kmeans_centers.npy') ## [0,1]
     C = np.rint(127.5 * (C + 1.0))
     C = torch.from_numpy(C)
+    C = C.to(device)
 
     n_samples=opts.n_samples
 
@@ -93,14 +98,14 @@ if __name__=='__main__':
             image_url=os.path.join(opts.image_url,x_name)
             input_image=Image.open(image_url).convert("RGB")
             x = input_image.resize((opts.image_size,opts.image_size),resample=Image.BILINEAR)
-            x = torch.from_numpy(np.array(x)).view(-1, 3)
+            x = torch.from_numpy(np.array(x)).to(device).view(-1, 3)
             x = x.float()
             a = ((x[:, None, :] - C[None, :, :])**2).sum(-1).argmin(1) # cluster assignments
 
             mask_url=os.path.join(opts.mask_url,y_name)
             input_mask=Image.open(mask_url).convert("L")
             y = input_mask.resize((opts.image_size,opts.image_size),resample=Image.NEAREST)
-            y = torch.from_numpy(np.array(y)/255.).view(-1)
+            y = torch.from_numpy(np.array(y)/255.).to(device).view(-1)
             y = y>0.5
             y = y.float()
 
@@ -109,7 +114,7 @@ if __name__=='__main__':
             b_list=[y]*n_samples
             b_tensor=torch.stack(b_list,dim=0) ## Input masks
             a_tensor*=(1-b_tensor).long()
-
+            
             if opts.sample_all:
                 pixels=sample_mask_all(IGPT_model,context=a_tensor,length=opts.image_size*opts.image_size,num_sample=n_samples,top_k=opts.top_k,mask=b_tensor,no_bar=opts.no_progressive_bar)
             else:
@@ -120,7 +125,8 @@ if __name__=='__main__':
 
                 current_url=os.path.join(opts.save_url,'condition_%d'%(i+1))
                 os.makedirs(current_url,exist_ok=True)
-                current_img=C[pixels[i]].view(opts.image_size, opts.image_size, 3).numpy().astype(np.uint8)
+                # import ipdb;ipdb.set_trace()
+                current_img=C[pixels[i]].view(opts.image_size, opts.image_size, 3).cpu().numpy().astype(np.uint8)
                 tmp=Image.fromarray(current_img)
                 tmp.save(os.path.join(current_url,img_name))
             print("Finish %s"%(img_name))

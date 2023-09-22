@@ -19,7 +19,7 @@ class Guided_Upsampler():
 
         self.debug = False
         self.model_name = model_name
-
+        # import ipdb;ipdb.set_trace()
         self.inpaint_model = InpaintingModel(config).to(config.DEVICE)
 
         self.psnr = PSNR(255.0).to(config.DEVICE)

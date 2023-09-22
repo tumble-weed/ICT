@@ -25,8 +25,9 @@ class BaseModel(nn.Module):
                 data = torch.load(self.gen_weights_path)
             else:
                 data = torch.load(self.gen_weights_path, map_location=lambda storage, loc: storage)
-
-            self.generator.load_state_dict(data['generator'])
+            # import ipdb;ipdb.set_trace()
+            generator_container = torch.nn.DataParallel(self.generator)
+            generator_container.load_state_dict(data['generator'])
             self.iteration = data['iteration']
 
         # load discriminator only when training
@@ -37,8 +38,8 @@ class BaseModel(nn.Module):
                 data = torch.load(self.dis_weights_path)
             else:
                 data = torch.load(self.dis_weights_path, map_location=lambda storage, loc: storage)
-
-            self.discriminator.load_state_dict(data['discriminator'])
+            discriminator_container = torch.nn.DataParallel(self.discriminator)
+            discriminator_container.load_state_dict(data['discriminator'])
 
     def save(self):
         print('\nsaving %s...\n' % self.name)
